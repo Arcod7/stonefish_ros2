@@ -853,7 +853,11 @@ void ROS2SimulationManager::DepthCameraImageReady(DepthCamera* cam)
     img->header.stamp = captureTimeS > 0.0
         ? rclcpp::Time(static_cast<int64_t>(captureTimeS * 1e9))
         : nh_->get_clock()->now();
-    memcpy(img->data.data(), (float*)cam->getImageDataPointer(), img->step * img->height);
+    // Stonefish writes 0 for no-return pixels; REP 118 requires NaN in 32FC1 images.
+    const float* src = (const float*)cam->getImageDataPointer();
+    float* dst = reinterpret_cast<float*>(img->data.data());
+    for(size_t i = 0; i < img->width * img->height; ++i)
+        dst[i] = src[i] > 0.f ? src[i] : std::numeric_limits<float>::quiet_NaN();
 
     //Fill in the info message
     sensor_msgs::msg::CameraInfo::SharedPtr info = cameraMsgPrototypes_[cam->getName()].second;
