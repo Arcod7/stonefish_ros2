@@ -24,6 +24,7 @@
 //
 
 #include "stonefish_ros2/ROS2SimulationManager.h"
+#include <limits>
 #include "stonefish_ros2/ROS2ScenarioParser.h"
 #include "stonefish_ros2/ROS2Interface.h"
 
@@ -848,7 +849,10 @@ void ROS2SimulationManager::DepthCameraImageReady(DepthCamera* cam)
 {
     //Fill in the image message
     sensor_msgs::msg::Image::SharedPtr img = cameraMsgPrototypes_[cam->getName()].first;
-    img->header.stamp = nh_->get_clock()->now();
+    double captureTimeS = (double)cam->getLastCaptureTime();
+    img->header.stamp = captureTimeS > 0.0
+        ? rclcpp::Time(static_cast<int64_t>(captureTimeS * 1e9))
+        : nh_->get_clock()->now();
     memcpy(img->data.data(), (float*)cam->getImageDataPointer(), img->step * img->height);
 
     //Fill in the info message
