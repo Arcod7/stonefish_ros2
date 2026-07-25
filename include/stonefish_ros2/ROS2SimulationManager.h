@@ -43,6 +43,7 @@
 #include "stonefish_ros2/srv/sonar_settings.hpp"
 #include "stonefish_ros2/srv/sonar_settings2.hpp"
 #include "stonefish_ros2/srv/respawn.hpp"
+#include "stonefish_ros2/srv/set_entity_pose.hpp"
 
 #include <Stonefish/core/SimulationManager.h>
 #include <Stonefish/actuators/Servo.h>
@@ -136,6 +137,8 @@ namespace sf
                              std_srvs::srv::Trigger::Response::SharedPtr res);
         void RespawnRobotService(const stonefish_ros2::srv::Respawn::Request::SharedPtr req, 
                              stonefish_ros2::srv::Respawn::Response::SharedPtr res);
+        void SetEntityPoseService(const stonefish_ros2::srv::SetEntityPose::Request::SharedPtr req,
+                                  stonefish_ros2::srv::SetEntityPose::Response::SharedPtr res);
         void UniformVFCallback(const geometry_msgs::msg::Vector3::SharedPtr msg, Uniform* vf);
         void JetVFCallback(const std_msgs::msg::Float64::SharedPtr msg, Jet* vf);
         void ActuatorOriginCallback(const geometry_msgs::msg::Transform::SharedPtr msg, Actuator* act);

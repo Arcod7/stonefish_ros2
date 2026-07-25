@@ -24,6 +24,7 @@
 //
 
 #include "stonefish_ros2/ROS2SimulationManager.h"
+#include <cmath>
 #include <limits>
 #include "stonefish_ros2/ROS2ScenarioParser.h"
 #include "stonefish_ros2/ROS2Interface.h"
@@ -36,6 +37,7 @@
 #include "geometry_msgs/msg/wrench_stamped.hpp"
 
 #include <Stonefish/entities/animation/ManualTrajectory.h>
+#include <Stonefish/entities/StaticEntity.h>
 #include <Stonefish/entities/forcefields/Uniform.h>
 #include <Stonefish/entities/forcefields/Jet.h>
 #include <Stonefish/joints/FixedJoint.h>
@@ -192,6 +194,8 @@ void ROS2SimulationManager::BuildScenario()
     srvs_["enable_currents"] = nh_->create_service<std_srvs::srv::Trigger>("enable_currents", std::bind(&ROS2SimulationManager::EnableCurrentsService, this, _1, _2));
     srvs_["disable_currents"] = nh_->create_service<std_srvs::srv::Trigger>("disable_currents", std::bind(&ROS2SimulationManager::DisableCurrentsService, this, _1, _2));
     srvs_["respawn_robot"] = nh_->create_service<stonefish_ros2::srv::Respawn>("respawn_robot", std::bind(&ROS2SimulationManager::RespawnRobotService, this, _1, _2));
+    srvs_["set_entity_pose"] = nh_->create_service<stonefish_ros2::srv::SetEntityPose>(
+        "set_entity_pose", std::bind(&ROS2SimulationManager::SetEntityPoseService, this, _1, _2));
 }
 
 void ROS2SimulationManager::DestroyScenario()
@@ -1057,6 +1061,37 @@ void ROS2SimulationManager::RespawnRobotService(const stonefish_ros2::srv::Respa
         res->message = "Robot not found.";
         res->success= false;
     }
+}
+
+void ROS2SimulationManager::SetEntityPoseService(
+    const stonefish_ros2::srv::SetEntityPose::Request::SharedPtr req,
+    stonefish_ros2::srv::SetEntityPose::Response::SharedPtr res)
+{
+    Entity* entity = getEntity(req->name);
+    StaticEntity* body = dynamic_cast<StaticEntity*>(entity);
+    if(body == nullptr)
+    {
+        res->success = false;
+        res->message = "Static entity not found: " + req->name;
+        return;
+    }
+
+    const auto& p = req->pose.position;
+    const auto& q = req->pose.orientation;
+    const Scalar qNorm = std::sqrt(q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w);
+    if(!std::isfinite(p.x) || !std::isfinite(p.y) || !std::isfinite(p.z)
+       || !std::isfinite(qNorm) || qNorm < Scalar(1e-9))
+    {
+        res->success = false;
+        res->message = "Pose must contain finite position and non-zero orientation";
+        return;
+    }
+
+    body->setTransform(Transform(
+        Quaternion(q.x/qNorm, q.y/qNorm, q.z/qNorm, q.w/qNorm),
+        Vector3(p.x, p.y, p.z)));
+    res->success = true;
+    res->message = "Moved static entity " + req->name;
 }
 
 void ROS2SimulationManager::UniformVFCallback(const geometry_msgs::msg::Vector3::SharedPtr msg, Uniform* vf)
