@@ -1,0 +1,6 @@
+# Move a named static Stonefish entity without reloading its scenario.
+string name
+geometry_msgs/Pose pose
+---
+bool success
+string message
