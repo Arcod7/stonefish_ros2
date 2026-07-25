@@ -40,10 +40,10 @@ void ROS2GraphicalSimulationApp::Startup()
 {
     Init();
 
-    //Default the trackball view to follow the robot instead of the free camera
+    //Default the trackball view to chase the robot (position + orientation) instead of the free camera
     Robot* rob = getSimulationManager()->getRobot("bluerov2");
     if(rob != nullptr)
-        getSimulationManager()->getTrackball()->GlueToMoving(rob->getBaseLink());
+        getSimulationManager()->getTrackball()->GlueToMoving(rob->getBaseLink(), true);
 
     StartSimulation();
 }
